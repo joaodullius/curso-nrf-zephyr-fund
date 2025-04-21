@@ -1,0 +1,5 @@
+build*/
+.code-workspace
+.vscode/
+workspace.code-workspace
+*.zip
