@@ -9,7 +9,7 @@
 
 LOG_MODULE_REGISTER(gnss_nmea, LOG_LEVEL_INF);
 
-#define UART_NODE DT_NODELABEL(uart0)
+#define UART_NODE DT_NODELABEL(uart1)
 const struct device *uart = DEVICE_DT_GET(UART_NODE);
 #define NMEA_BUFFER_SIZE 256  // Buffer size for storing NMEA sentences
 
@@ -61,6 +61,8 @@ void process_nmea_sentence(char *nmea) {
     float hdop = 0.0;
 
     if (strstr(nmea, "$GNGGA") != NULL) {
+        LOG_WRN("%s", nmea);  // Print the NMEA sentence for debugging
+
         token = strtok(nmea, ",");
         while (token != NULL) {
             switch (field) {
@@ -90,8 +92,8 @@ void process_nmea_sentence(char *nmea) {
             LOG_INF("GNSS Fix Acquired!");
             LOG_INF("----------------------------------");
             LOG_INF(" Fix Type      : %s", fix_type);
-            LOG_INF(" Latitude      : %.7f°", latitude);
-            LOG_INF(" Longitude     : %.7f°", longitude);
+            LOG_INF(" Latitude      : %.7f deg", latitude);
+            LOG_INF(" Longitude     : %.7f deg", longitude);
             LOG_INF(" Altitude      : %.2f m", (double)altitude);
             LOG_INF(" Satellites    : %d", num_satellites);
             LOG_INF(" HDOP          : %.2f", (double)hdop);

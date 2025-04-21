@@ -65,11 +65,14 @@ def main():
     parser.add_argument("--com", required=True, help="Porta serial COM (ex: COM3 ou /dev/ttyUSB0)")
     parser.add_argument("--rate", type=int, default=115200, help="Baudrate (default: 115200)")
     parser.add_argument("--read", action="store_true", help="Ativa leitura da resposta da placa")
+    parser.add_argument("--print_output", action="store_true", help="Imprime mensagens enviadas")
+
     args = parser.parse_args()
 
     port = args.com
     baudrate = args.rate
     do_read = args.read
+    print_output = args.print_output
     interval = 1.0  # envio a cada 1 segundo
 
     lat_ref = -23.585099907083166
@@ -84,8 +87,13 @@ def main():
             gsv_msgs = generate_gsv()
 
             ser.write((gga + '\r\n').encode('ascii'))
+            if print_output:
+                print(gga)
+
             for gsv in gsv_msgs:
                 ser.write((gsv + '\r\n').encode('ascii'))
+                if print_output:
+                    print(gsv)
 
             if do_read:
                 incoming = ser.read(ser.in_waiting or 1)
