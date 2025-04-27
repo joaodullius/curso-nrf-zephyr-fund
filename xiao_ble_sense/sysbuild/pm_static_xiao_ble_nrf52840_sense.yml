@@ -1,0 +1,23 @@
+sd_partition:
+  address: 0x00000
+  end_address: 0x27000
+  region: flash_primary
+  size: 0x27000
+
+app:
+  address: 0x27000
+  end_address: 0xEC000
+  region: flash_primary
+  size: 0xC5000  # from 0x27000 to 0xEC000
+
+storage:
+  address: 0xEC000
+  end_address: 0xF4000
+  region: flash_primary
+  size: 0x8000
+
+adafruit_boot:
+  address: 0xF4000
+  end_address: 0x100000
+  region: flash_primary
+  size: 0xC000
