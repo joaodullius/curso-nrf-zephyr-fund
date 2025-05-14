@@ -1,0 +1,11 @@
+menu "Log Application"
+
+module = LOG_APP
+module-str = "Log Application"
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu # "Log Application"
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu
