@@ -11,7 +11,7 @@
  #include <zephyr/logging/log.h>
  #include <string.h>
  
- LOG_MODULE_REGISTER(uart_async, 4);
+ LOG_MODULE_REGISTER(uart_async, LOG_LEVEL_DBG);
  
  #define MSG_SIZE 32
  
@@ -21,7 +21,7 @@
  };
  K_MSGQ_DEFINE(uart_msgq, sizeof(struct msgq_item_t), 10, 4);
  
- #define UART_DEVICE_NODE DT_CHOSEN(zephyr_shell_uart)
+ #define UART_DEVICE_NODE DT_ALIAS(work_uart)
  static const struct device *uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
  
  static char rx_buf[MSG_SIZE];

@@ -3,16 +3,16 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(uart_echo, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(uart_echo, LOG_LEVEL_DBG);
 
-#define UART_NODE DT_NODELABEL(uart1)
+#define UART_NODE DT_ALIAS(work_uart)
 const struct device *uart = DEVICE_DT_GET(UART_NODE);
 
-void main(void)
+int main(void)
 {
     LOG_INF("Starting UART Echo\n");
     if (!device_is_ready(uart)) {
-        return;
+        return -1;
     }
 
     unsigned char c;

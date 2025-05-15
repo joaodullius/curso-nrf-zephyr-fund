@@ -9,7 +9,7 @@
 
 LOG_MODULE_REGISTER(gnss_nmea, LOG_LEVEL_INF);
 
-#define UART_NODE DT_NODELABEL(uart1)
+#define UART_NODE DT_ALIAS(work_uart)
 const struct device *uart = DEVICE_DT_GET(UART_NODE);
 #define NMEA_BUFFER_SIZE 256  // Buffer size for storing NMEA sentences
 

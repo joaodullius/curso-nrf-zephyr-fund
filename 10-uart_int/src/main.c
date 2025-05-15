@@ -3,7 +3,7 @@
 #include <zephyr/drivers/uart.h>
 #include <string.h>
 
-#define UART_DEVICE_NODE DT_CHOSEN(zephyr_shell_uart)
+#define UART_DEVICE_NODE DT_ALIAS(work_uart)
 static const struct device *uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 
 #define MSG_SIZE 64
@@ -45,11 +45,11 @@ void print_uart(const char *buf)
     }
 }
 
-void main(void)
+int main(void)
 {
     if (!device_is_ready(uart_dev)) {
         printk("UART device not ready!\n");
-        return;
+        return -1;
     }
 
     uart_irq_callback_user_data_set(uart_dev, serial_cb, NULL);
