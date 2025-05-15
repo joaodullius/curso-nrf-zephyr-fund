@@ -1,0 +1,20 @@
+menu "GNSS NMEA Parser"
+
+#Add config for low power mode
+config GNSS_NMEA_LOW_POWER
+    bool "GNSS NMEA Low Power Mode"
+    default n
+    help
+        Enable low power mode for GNSS NMEA parser.
+        This will reduce the power consumption of the GNSS module
+        by disabling uart when not in use.
+
+module = GNSS_NMEA
+module-str = "GNSS NMEA Parser"
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu # "Log Application"
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu

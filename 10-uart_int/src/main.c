@@ -1,7 +1,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/logging/log.h>
 #include <string.h>
+
+LOG_MODULE_REGISTER(uart_int, LOG_LEVEL_INF);
 
 #define UART_DEVICE_NODE DT_ALIAS(work_uart)
 static const struct device *uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
@@ -9,11 +12,26 @@ static const struct device *uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 #define MSG_SIZE 64
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos = 0;
-static volatile bool line_ready = false;
+
+// Define a tarefa de trabalho para processar a linha recebida
+void handle_line_work(struct k_work *work);
+void print_uart(const char *buf);
+K_WORK_DEFINE(line_work, handle_line_work);
 
 /*
- * Callback chamado pela interrupção da UART sempre que dados estão disponíveis.
- * Acumula caracteres em rx_buf até encontrar um \n ou \r.
+ * Workqueue handler — executado fora da ISR
+ */
+void handle_line_work(struct k_work *work)
+{
+    print_uart("Echo: ");
+    print_uart(rx_buf);
+    print_uart("\r\n");
+
+    rx_buf_pos = 0;
+}
+
+/*
+ * Callback da interrupção UART
  */
 void serial_cb(const struct device *dev, void *user_data)
 {
@@ -24,19 +42,21 @@ void serial_cb(const struct device *dev, void *user_data)
     }
 
     while (uart_irq_rx_ready(dev)) {
-        uart_fifo_read(dev, &c, 1);
+        if (uart_fifo_read(dev, &c, 1) != 1) {
+            continue;
+        }
 
-        if ((c == '\n' || c == '\r') && rx_buf_pos > 0 && !line_ready) {
+        if ((c == '\n' || c == '\r') && rx_buf_pos > 0) {
             rx_buf[rx_buf_pos] = '\0';
-            line_ready = true;
-        } else if (rx_buf_pos < MSG_SIZE - 1 && !line_ready) {
+            k_work_submit(&line_work); // envia para a system workqueue
+        } else if (rx_buf_pos < MSG_SIZE - 1) {
             rx_buf[rx_buf_pos++] = c;
         }
     }
 }
 
 /*
- * Envia uma string pela UART (caractere a caractere).
+ * Envia string pela UART
  */
 void print_uart(const char *buf)
 {
@@ -47,6 +67,8 @@ void print_uart(const char *buf)
 
 int main(void)
 {
+    LOG_INF("UART Interrupt Example (with k_work)");
+
     if (!device_is_ready(uart_dev)) {
         printk("UART device not ready!\n");
         return -1;
@@ -58,16 +80,5 @@ int main(void)
     print_uart("Hello! I'm your echo bot.\r\n");
     print_uart("Type something and press enter:\r\n");
 
-    while (1) {
-        if (line_ready) {
-            print_uart("Echo: ");
-            print_uart(rx_buf);
-            print_uart("\r\n");
-
-            rx_buf_pos = 0;
-            line_ready = false;
-        }
-
-        k_msleep(10); // evita busy loop
-    }
+    return 0; // nada de while(1), tudo via eventos
 }

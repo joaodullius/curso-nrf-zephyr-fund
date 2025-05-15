@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"nrf-connect.applications": [
+			"${workspaceFolder}\\03-blinky_button_int",
+			"${workspaceFolder}\\00-blinky",
+			"${workspaceFolder}\\01-hello_world",
+			"${workspaceFolder}\\05-custom_gpio",
+			"${workspaceFolder}\\06-blinky_pwm",
+			"${workspaceFolder}\\06A-blinky_pwm_sw",
+			"${workspaceFolder}\\06A-blinky_pwm_hw",
+			"${workspaceFolder}\\06B-blinky_pwm_sw",
+			"${workspaceFolder}\\06C-blinky_pwm_rgb",
+			"${workspaceFolder}\\07-log_subsystem",
+			"${workspaceFolder}\\07C-log_subsystem_rtt",
+			"${workspaceFolder}\\08-fault_button",
+			"${workspaceFolder}\\09-uart_pool",
+			"${workspaceFolder}\\10-uart_int",
+			"${workspaceFolder}\\11-uart_async",
+			"${workspaceFolder}\\12_gnss_nmea"
+		],
+		"iis.activeFolder": "curso-nrf-zephyr-fund",
+		"files.associations": {
+			"device.h": "c"
+		}
+	}
+}
