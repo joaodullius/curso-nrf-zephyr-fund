@@ -13,7 +13,7 @@ const struct device *uart = DEVICE_DT_GET(UART_NODE);
 #define NMEA_BUFFER_SIZE 256
 #define GNSS_FIX_TIMEOUT  60  // segundos
 
-static volatile bool gnss_fix_ready = false;  // flag global
+K_SEM_DEFINE(gnss_fix_done, 0, 1);
 
 double encode_nmea_to_double(const char *nmea_coord, char direction) {
     if (nmea_coord == NULL) return 0.0;
@@ -78,7 +78,7 @@ void process_nmea_sentence(char *nmea) {
             LOG_INF(" HDOP          : %.2f", (double)hdop);
             LOG_INF("----------------------------------");
 
-            gnss_fix_ready = true;
+            k_sem_give(&gnss_fix_done);
         } else {
             LOG_WRN("GNSS Fix Invalid! Retrying...");
         }
@@ -108,19 +108,17 @@ static void uart_cb(const struct device *dev, void *user_data) {
 }
 
 int acquire_gnss_fix(void) {
-    gnss_fix_ready = false;
 
 #ifdef CONFIG_GNSS_NMEA_LOW_POWER
     LOG_DBG("Enabling UART Peripheral...");
     pm_device_action_run(uart, PM_DEVICE_ACTION_RESUME);
-#endif
     uart_irq_rx_enable(uart);
-
+#endif
 
     LOG_INF("Waiting for GNSS fix...");
-    for (int i = 0; i < GNSS_FIX_TIMEOUT; i++) {
-        if (gnss_fix_ready) break;
-        k_sleep(K_SECONDS(1));
+    if (k_sem_take(&gnss_fix_done, K_SECONDS(GNSS_FIX_TIMEOUT)) != 0) {
+        LOG_ERR("GNSS Fix Timed Out!");
+        return -1;
     }
 
 #ifdef CONFIG_GNSS_NMEA_LOW_POWER
@@ -129,10 +127,6 @@ int acquire_gnss_fix(void) {
     pm_device_action_run(uart, PM_DEVICE_ACTION_SUSPEND);
 #endif
 
-    if (!gnss_fix_ready) {
-        LOG_ERR("GNSS Fix Timed Out!");
-        return -1;
-    }
     return 0;
 }
 
@@ -142,6 +136,7 @@ int uart_init(void) {
         return -1;
     }
     uart_irq_callback_set(uart, uart_cb);
+    uart_irq_rx_enable(uart);
     return 0;
 }
 
@@ -152,7 +147,7 @@ int main(void) {
     acquire_gnss_fix();  // Primeira tentativa
 
     while (1) {
-        k_sleep(K_SECONDS(5));  // Temporário: 5s (pode ser aumentado depois)
+        k_sleep(K_SECONDS(10));  // Temporário: 10s (pode ser aumentado depois)
         if (acquire_gnss_fix() < 0) {
             LOG_WRN("GNSS Fix Failed! Trying again in the next cycle.");
         }
