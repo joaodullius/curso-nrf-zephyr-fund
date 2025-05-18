@@ -21,7 +21,8 @@
 			"${workspaceFolder}\\09-uart_pool",
 			"${workspaceFolder}\\10-uart_int",
 			"${workspaceFolder}\\11-uart_async",
-			"${workspaceFolder}\\12_gnss_nmea"
+			"${workspaceFolder}\\12-blinky_button_disable",
+			"${workspaceFolder}\\13-button_uart_disable"
 		],
 		"iis.activeFolder": "curso-nrf-zephyr-fund",
 		"files.associations": {
