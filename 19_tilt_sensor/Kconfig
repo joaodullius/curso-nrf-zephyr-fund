@@ -1,0 +1,28 @@
+menu "TILT SENSOR"
+
+config TILT_REF_X
+    int "Reference X (m/s^2 * 1000)"
+    default 0
+
+config TILT_REF_Y
+    int "Reference Y (m/s^2 * 1000)"
+    default 0
+
+config TILT_REF_Z
+    int "Reference Z (m/s^2 * 1000)"
+    default 10000
+
+config TILT_TOLERANCE_PERCENT
+    int "Allowed tilt variation (%)"
+    default 20
+    range 1 100
+
+module = TILT_SENSOR
+module-str = "TILT SENSOR"
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu # "Log Application"
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu

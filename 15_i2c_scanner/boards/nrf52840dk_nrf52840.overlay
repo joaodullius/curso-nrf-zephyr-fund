@@ -1,0 +1,6 @@
+// UART pelo conector Arduino
+/ {
+    aliases {
+        work-i2c = &i2c0;
+    };
+};

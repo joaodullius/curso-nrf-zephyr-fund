@@ -1,0 +1,9 @@
+
+&i2c0 {
+    bmp280: bmp280@76 {
+        compatible = "bosch,bmp280";
+        reg = <0x76>;
+        label = "BMP280";
+    };
+};
+
