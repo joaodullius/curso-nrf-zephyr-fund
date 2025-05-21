@@ -1,0 +1,24 @@
+
+/ {
+	leds {
+		compatible = "gpio-leds";
+	};
+
+	gpio_keys {
+		led0: led0 {
+			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+			label = "led0";
+		};
+
+		led1: led1 {
+			gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+			label = "led1";
+		};
+	};
+
+	aliases {
+		led0 = &led0;
+        led1 = &led1;
+		accel = &lsm303agr_accel;
+	};
+};

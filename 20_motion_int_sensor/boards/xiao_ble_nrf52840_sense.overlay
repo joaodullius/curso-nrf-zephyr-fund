@@ -1,0 +1,6 @@
+
+/ {
+	aliases {
+		accel = &lsm6ds3tr_c;
+	};
+};

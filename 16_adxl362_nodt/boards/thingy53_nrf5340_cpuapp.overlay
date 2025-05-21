@@ -1,0 +1,6 @@
+
+/ {
+	aliases {
+		work-spi = &spi3;
+	};
+};

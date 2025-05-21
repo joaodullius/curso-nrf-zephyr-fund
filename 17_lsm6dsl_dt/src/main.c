@@ -55,7 +55,7 @@ int main(void)
         float ay_mg = ay * LSM6DSL_SENSITIVITY_2G;
         float az_mg = az * LSM6DSL_SENSITIVITY_2G;
 
-        LOG_INF("Accel [mg]: X=%.2f Y=%.2f Z=%.2f", 
+        LOG_INF("Accel [m/s^2]: X=%.2f Y=%.2f Z=%.2f", 
                 (double)ax_mg, (double)ay_mg, (double)az_mg);
 
         k_sleep(K_MSEC(500));
