@@ -26,8 +26,6 @@ int main(void)
 		LOG_ERR("I2C: Device driver not found.");
 		return -1;
 	}
-	
-	i2c_dev = DEVICE_DT_GET(I2C_NODE);
 
     uint8_t buffer = 0;
 	uint8_t ret = 0;
