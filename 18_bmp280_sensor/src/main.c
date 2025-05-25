@@ -17,7 +17,7 @@ int main(void)
     LOG_INF("BMP280 driver ready");
 
     while (1) {
-        struct sensor_value temp;
+        struct sensor_value temp, press;
 
         if (sensor_sample_fetch(bmp280) < 0) {
             LOG_ERR("Failed to fetch sample");
@@ -29,7 +29,14 @@ int main(void)
             return -1;
         }
 
-        LOG_INF("Temperature: %d.%02d °C", temp.val1, temp.val2);
+        if (sensor_channel_get(bmp280, SENSOR_CHAN_PRESS, &press) < 0) {
+            LOG_ERR("Failed to get pressure");
+            return -1;
+        }
+
+        LOG_INF("Temperature: %0.3f °C", sensor_value_to_double(&temp));
+        LOG_INF("Pressure: %0.3f hPa",sensor_value_to_double(&press));
+        
         k_sleep(K_MSEC(1000));
     }
 }
