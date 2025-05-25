@@ -9,12 +9,8 @@
 			"${workspaceFolder}\\06-blinky_pwm",
 			"${workspaceFolder}\\06A-blinky_pwm_sw",
 			"${workspaceFolder}\\07-log_subsystem",
-			"${workspaceFolder}\\09-uart_pool",
-			"${workspaceFolder}\\10-uart_int",
-			"${workspaceFolder}\\11-uart_async",
 			"${workspaceFolder}\\12-blinky_button_disable",
-			"${workspaceFolder}\\13-button_uart_disable",
-			"${workspaceFolder}\\14_gnss_nmea"
+			"${workspaceFolder}\\00-blinky"
 		],
 		"iis.activeFolder": "curso-nrf-zephyr-fund",
 		"files.associations": {
