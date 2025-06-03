@@ -17,7 +17,7 @@
 
  void enable_interrupt_work(struct k_work *work) 
  {
-    gpio_pin_interrupt_configure_dt(&button, GPIO_INT_LEVE_ACTIVE);
+    gpio_pin_interrupt_configure_dt(&button, GPIO_INT_LEVEL_ACTIVE);
  }
  K_WORK_DELAYABLE_DEFINE(debounce_work, enable_interrupt_work);
  
