@@ -2,6 +2,8 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(blinky_enigma, LOG_LEVEL_INF);
 
 #define LED0_NODE DT_ALIAS(led0)
 #define LED1_NODE DT_ALIAS(led1)
@@ -16,6 +18,7 @@ void led0_thread(void)
 {
     while (1) {
         gpio_pin_toggle_dt(&led0);
+        LOG_INF("LED0 toggled");
         k_msleep(1000); // bloqueia a thread por 1 segundo
     }
 }
@@ -26,6 +29,7 @@ K_TIMER_DEFINE(led1_timer, NULL, NULL);
 void led1_timer_handler(struct k_timer *timer)
 {
     gpio_pin_toggle_dt(&led1); // executado no contexto do timer
+    LOG_INF("LED1 toggled");
 }
 
 // Método 3: Uso de k_work_delayable com re-agendamento
@@ -34,6 +38,7 @@ static struct k_work_delayable led2_work;
 void led2_work_handler(struct k_work *work)
 {
     gpio_pin_toggle_dt(&led2); // executado no contexto da system workqueue
+    LOG_INF("LED2 toggled");
     k_work_schedule(&led2_work, K_MSEC(1000)); // reagenda o trabalho para daqui a 1s
 }
 
@@ -44,14 +49,14 @@ K_THREAD_DEFINE(led0_tid, STACK_SIZE, led0_thread, NULL, NULL, NULL, PRIORITY, 0
 
 int main(void)
 {
-    printk("Enigma dos 3 LEDs!\n\n");
+    LOG_INF("Enigma dos 3 LEDs!\n");
 
-    printk("LED0: usa k_msleep() em thread dedicada\n");
-    printk("LED1: usa k_timer com callback\n");
-    printk("LED2: usa k_work_delayable com re-agendamento\n\n");
+    LOG_INF("LED0: usa k_msleep() em thread dedicada");
+    LOG_INF("LED1: usa k_timer com callback");
+    LOG_INF("LED2: usa k_work_delayable com re-agendamento\n");
 
     if (!device_is_ready(led0.port) || !device_is_ready(led1.port) || !device_is_ready(led2.port)) {
-        printk("Erro: algum LED não está pronto!\n");
+        LOG_INF("Erro: algum LED não está pronto!");
         return -1;
     }
 
