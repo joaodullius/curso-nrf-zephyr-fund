@@ -7,6 +7,13 @@
 
 LOG_MODULE_REGISTER(tilt_sensor, CONFIG_TILT_SENSOR_LOG_LEVEL);
 
+struct accel_sample {
+    struct sensor_value x;
+    struct sensor_value y;
+    struct sensor_value z;
+    uint32_t timestamp;
+};
+
 #define SENSOR_NODE DT_ALIAS(accel)
 const struct device *accel_dev = DEVICE_DT_GET(SENSOR_NODE);
 #define LED0_NODE DT_ALIAS(led0)
@@ -22,11 +29,11 @@ static const struct gpio_dt_spec led_ctrl = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
 #define REF_Z CONFIG_TILT_REF_Z
 #define TOL_PCT CONFIG_TILT_TOLERANCE_PERCENT
 
-static bool is_upright(const struct sensor_value *accel)
+static bool is_upright(const struct accel_sample *sample)
 {
-    int32_t acc_x = accel[0].val1 * 1000 + accel[0].val2 / 1000;
-    int32_t acc_y = accel[1].val1 * 1000 + accel[1].val2 / 1000;
-    int32_t acc_z = accel[2].val1 * 1000 + accel[2].val2 / 1000;
+    int32_t acc_x = sample->x.val1 * 1000 + sample->x.val2 / 1000;
+    int32_t acc_y = sample->y.val1 * 1000 + sample->y.val2 / 1000;
+    int32_t acc_z = sample->z.val1 * 1000 + sample->z.val2 / 1000;
     LOG_DBG("acc_x=%d, acc_y=%d, acc_z=%d", acc_x, acc_y, acc_z);
     LOG_DBG("REF_X=%d, REF_Y=%d, REF_Z=%d", REF_X, REF_Y, REF_Z);
 
@@ -48,16 +55,26 @@ static bool is_upright(const struct sensor_value *accel)
     return ok_x && ok_y && ok_z;
 }
 
-K_MSGQ_DEFINE(accel_q, sizeof(struct sensor_value[3]), 10, 4);
+K_MSGQ_DEFINE(accel_q, sizeof(struct accel_sample), 10, 4);
 
 static void sampling_thread(void)
 {
     struct sensor_value accel[3];
+    struct accel_sample sample;
+    static uint32_t counter = 0;
 
     while (1) {
         if (sensor_sample_fetch(accel_dev) == 0 &&
             sensor_channel_get(accel_dev, SENSOR_CHAN_ACCEL_XYZ, accel) == 0) {
-            k_msgq_put(&accel_q, &accel, K_NO_WAIT);
+            
+            sample.x = accel[0];
+            sample.y = accel[1];
+            sample.z = accel[2];
+            sample.timestamp = counter++;
+            
+            if (k_msgq_put(&accel_q, &sample, K_NO_WAIT) != 0) {
+                LOG_WRN("Message queue full, dropping sample");
+            }
         } else {
             LOG_ERR("Sensor read error");
         }
@@ -67,17 +84,18 @@ static void sampling_thread(void)
 
 static void tilt_thread(void)
 {
-    struct sensor_value accel[3];
+    struct accel_sample sample;
 
     while (1) {
-        k_msgq_get(&accel_q, &accel, K_FOREVER);
+        k_msgq_get(&accel_q, &sample, K_FOREVER);
 
-        LOG_INF("Accel [m/s^2]: X=%.3f Y=%.3f Z=%.3f",
-                sensor_value_to_double(&accel[0]),
-                sensor_value_to_double(&accel[1]),
-                sensor_value_to_double(&accel[2]));
+        LOG_INF("Accel [m/s^2]: X=%.3f Y=%.3f Z=%.3f (timestamp=%u)",
+                sensor_value_to_double(&sample.x),
+                sensor_value_to_double(&sample.y),
+                sensor_value_to_double(&sample.z),
+                sample.timestamp);
 
-        if (is_upright(accel)) {
+        if (is_upright(&sample)) {
             LOG_INF("Position: UPRIGHT");
             gpio_pin_set_dt(&led_dev, 0);
             k_sleep(K_MSEC(500));
