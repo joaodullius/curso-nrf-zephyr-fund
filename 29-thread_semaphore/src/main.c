@@ -1,6 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/sys/random.h>
+#include <zephyr/random/random.h>
 
 LOG_MODULE_REGISTER(prod_cons_sem, LOG_LEVEL_INF);
 
