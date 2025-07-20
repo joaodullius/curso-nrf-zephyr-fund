@@ -11,13 +11,13 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
 static struct gpio_callback button_cb_data;
 
 const struct device *bmp280 = DEVICE_DT_GET_ONE(bosch_bme280);
-
+#define MSGQ_SIZE 10
 struct bmp280_msg {
     struct sensor_value temp;
     struct sensor_value press;
 };
 
-K_MSGQ_DEFINE(bmp280_q, sizeof(struct bmp280_msg), 10, 4);
+K_MSGQ_DEFINE(bmp280_q, sizeof(struct bmp280_msg), MSGQ_SIZE, 4);
 
 static void dump_queue(void)
 {
@@ -33,11 +33,12 @@ static void dump_queue(void)
 static void button_pressed_isr(const struct device *dev, struct gpio_callback *cb,
                               uint32_t pins)
 {
-    ARG_UNUSED(dev);
-    ARG_UNUSED(cb);
-    ARG_UNUSED(pins);
     LOG_INF("Button pressed: dumping queue");
-    dump_queue();
+    if (k_msgq_num_used_get(&bmp180_q) > 0) {
+        dump_queue();
+    } else {
+        LOG_ERR("Queue is empty, nothing to dump");
+    }
 }
 
 void sensor_thread(void)
@@ -67,6 +68,8 @@ int main(void)
     int ret;
 
     LOG_INF("BMP280 message queue example");
+    LOG_INF("Message queue size: %d", MSGQ_SIZE);
+    LOG_INF("Message queue width: %d", sizeof(struct bmp180_msg));
 
     if (!device_is_ready(bmp280)) {
         LOG_ERR("BMP280 device not ready");

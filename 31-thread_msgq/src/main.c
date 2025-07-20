@@ -8,7 +8,8 @@ struct data_sample {
     uint32_t data;
 };
 
-K_MSGQ_DEFINE(data_q, sizeof(struct data_sample), 10, 4);
+#define MSGQ_SIZE 10
+K_MSGQ_DEFINE(data_q, sizeof(struct data_sample), MSGQ_SIZE, 4);
 
 void producer_thread(void)
 {
@@ -17,7 +18,7 @@ void producer_thread(void)
     while (1) {
         sample.data = sys_rand32_get();
         LOG_INF("Produced data: %u", sample.data);
-        k_msgq_put(&data_q, &sample, K_FOREVER);
+        k_msgq_put(&data_q, &sample, K_NO_WAIT);
         k_msleep(1000);
     }
 }
@@ -41,5 +42,8 @@ K_THREAD_DEFINE(cons_tid, STACK_SIZE, consumer_thread, NULL, NULL, NULL, PRIORIT
 int main(void)
 {
     LOG_INF("Producer-Consumer example using k_msgq");
+    LOG_INF("Message queue size: %d", MSGQ_SIZE);
+    LOG_INF("Message queue width: %d", sizeof(struct data_sample));
+
     return 0;
 }

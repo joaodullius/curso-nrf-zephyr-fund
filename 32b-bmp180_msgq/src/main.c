@@ -11,12 +11,12 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
 static struct gpio_callback button_cb_data;
 
 const struct device *bmp180 = DEVICE_DT_GET_ONE(bosch_bmp180);
-
+#define MSGQ_SIZE 10
 struct bmp180_msg {
     struct sensor_value temp;
 };
 
-K_MSGQ_DEFINE(bmp180_q, sizeof(struct bmp180_msg), 10, 4);
+K_MSGQ_DEFINE(bmp180_q, sizeof(struct bmp180_msg), MSGQ_SIZE, 4);
 
 static void dump_queue(void)
 {
@@ -31,16 +31,18 @@ static void dump_queue(void)
 static void button_pressed_isr(const struct device *dev, struct gpio_callback *cb,
                               uint32_t pins)
 {
-    ARG_UNUSED(dev);
-    ARG_UNUSED(cb);
-    ARG_UNUSED(pins);
     LOG_INF("Button pressed: dumping queue");
-    dump_queue();
+    if (k_msgq_num_used_get(&bmp180_q) > 0) {
+        dump_queue();
+    } else {
+        LOG_ERR("Queue is empty, nothing to dump");
+    }
 }
 
 void sensor_thread(void)
 {
     struct bmp180_msg msg;
+    int ret;
 
     while (1) {
         if (sensor_sample_fetch(bmp180) != 0) {
@@ -48,8 +50,13 @@ void sensor_thread(void)
         } else if (sensor_channel_get(bmp180, SENSOR_CHAN_DIE_TEMP, &msg.temp) != 0) {
             LOG_ERR("sensor_channel_get failed");
         } else {
-            k_msgq_put(&bmp180_q, &msg, K_NO_WAIT);
+            ret = k_msgq_put(&bmp180_q, &msg, K_NO_WAIT);
+            if (ret != 0) {
+                LOG_WRN("bmp180_q full, dropping sample Temp: %0.2f C",
+                sensor_value_to_double(&msg.temp));
+            }
         }
+        k_msleep(500);
     }
 }
 
@@ -64,6 +71,8 @@ int main(void)
     int ret;
 
     LOG_INF("BMP180 message queue example");
+    LOG_INF("Message queue size: %d", MSGQ_SIZE);
+    LOG_INF("Message queue width: %d", sizeof(struct bmp180_msg));
 
     if (!device_is_ready(bmp180)) {
         LOG_ERR("BMP180 device not ready");
