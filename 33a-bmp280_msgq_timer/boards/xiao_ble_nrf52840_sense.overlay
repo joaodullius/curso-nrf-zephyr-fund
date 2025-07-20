@@ -1,5 +1,0 @@
-/ {
-    aliases {
-        work-i2c = &i2c0;
-    };
-};
