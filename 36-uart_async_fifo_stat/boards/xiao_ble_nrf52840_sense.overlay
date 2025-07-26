@@ -1,0 +1,6 @@
+//Uart pelo conector 
+/ {
+	aliases {
+		work-uart = &uart0;
+	};
+};
