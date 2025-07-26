@@ -10,38 +10,45 @@ struct data_sample {
     uint32_t data;
 };
 
-ZBUS_LISTENER_DECLARE(consumer_lis);
+static void consumer_callback(const struct zbus_channel *chan)
+{
+    const struct data_sample *sample;
+
+    LOG_INF("Listener callback triggered!");
+    
+    /* Get direct pointer to channel message data */
+    sample = zbus_chan_const_msg(chan);
+    
+    LOG_INF("%u | Consumed data: %u", sample->timestamp, sample->data);
+}
+
+ZBUS_LISTENER_DEFINE(consumer_lis, consumer_callback);
 
 ZBUS_CHAN_DEFINE(data_chan,
                  struct data_sample,
                  NULL,
                  NULL,
                  ZBUS_OBSERVERS(consumer_lis),
-                 ZBUS_MSG_INIT(0, 0));
-
-static void consumer_callback(const struct zbus_channel *chan)
-{
-    struct data_sample sample;
-
-    if (zbus_chan_read(chan, &sample, K_NO_WAIT) == 0) {
-        LOG_INF("%u | Consumed data: %u", sample.timestamp, sample.data);
-    }
-}
-
-ZBUS_LISTENER_DEFINE(consumer_lis, 4, consumer_callback);
-ZBUS_LISTENER_THREAD_DEFINE(consumer_lis, 1024, 5);
+                 ZBUS_MSG_INIT(.timestamp = 0, .data = 0));
 
 static void producer_thread(void)
 {
     struct data_sample sample;
     uint32_t timestamp = 0;
 
+    /* Wait for system to be ready */
+    k_msleep(1000);
+
     while (1) {
         sample.timestamp = timestamp++;
         sample.data = sys_rand32_get();
 
-        zbus_chan_pub(&data_chan, &sample, K_NO_WAIT);
-        LOG_INF("%u | Produced data: %u", sample.timestamp, sample.data);
+        int ret = zbus_chan_pub(&data_chan, &sample, K_NO_WAIT);
+        if (ret == 0) {
+            LOG_INF("%u | Produced data: %u", sample.timestamp, sample.data);
+        } else {
+            LOG_ERR("Failed to publish data, ret: %d", ret);
+        }
 
         k_msleep(1000);
     }
@@ -54,6 +61,6 @@ K_THREAD_DEFINE(prod_tid, P_STACK_SIZE, producer_thread, NULL, NULL, NULL, P_PRI
 
 int main(void)
 {
-    LOG_INF("Producer-Consumer example using Zbus");
+    LOG_INF("Producer-Consumer example using Zbus with Listener");
     return 0;
 }
