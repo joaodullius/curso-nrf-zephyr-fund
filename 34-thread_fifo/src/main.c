@@ -5,6 +5,7 @@
 LOG_MODULE_REGISTER(prod_cons_fifo, LOG_LEVEL_INF);
 
 struct data_sample {
+    void *fifo_reserved;
     uint32_t timestamp;
     uint32_t data;
 };
