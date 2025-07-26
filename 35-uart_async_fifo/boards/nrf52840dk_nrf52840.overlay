@@ -1,0 +1,20 @@
+// UART pela USB
+/ {
+    aliases {
+        work-uart = &uart0;
+    };
+};
+
+
+
+// UART pelo conector Arduino
+// / {
+//     aliases {
+//         work-uart = &uart1;
+//     };
+// };
+
+
+// &uart1 {
+// 	status = "okay";
+// };
