@@ -11,7 +11,7 @@ struct data_sample {
 };
 
 /* Define a message subscriber */
-ZBUS_MSG_SUBSCRIBER_DEFINE(cons_msub, 4);
+ZBUS_MSG_SUBSCRIBER_DEFINE(cons_msub);
 
 /* Define the channel with the subscriber */
 ZBUS_CHAN_DEFINE(data_chan,
@@ -40,15 +40,15 @@ void producer_thread(void)
 
 void consumer_thread(void)
 {
+    const struct zbus_channel *chan;
     struct data_sample sample;
 
+    LOG_INF("Consumer thread started, waiting for messages...");
     while (1) {
-        int ret = zbus_msg_sub_get(&cons_msub, &sample, K_FOREVER);
-        if (ret == 0) {
+        zbus_sub_wait_msg(&cons_msub, &chan, &sample, K_FOREVER);
+        if (&data_chan == chan) {
             LOG_INF("%u | Consumed data: %u", sample.timestamp, sample.data);
-        } else {
-            LOG_ERR("zbus_msg_sub_get failed: %d", ret);
-        }
+        }    
     }
 }
 
