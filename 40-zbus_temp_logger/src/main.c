@@ -17,7 +17,7 @@ static const struct gpio_dt_spec led1 = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
 static const struct device *bmp180 = DEVICE_DT_GET_ONE(bosch_bmp180);
 
 /* Threshold for LED0 */
-#define TEMP_THRESHOLD 28.0f
+#define TEMP_THRESHOLD 25.0f
 
 static void led1_callback(const struct zbus_channel *chan)
 {
@@ -68,7 +68,7 @@ void sensor_thread(void)
         zbus_sub_wait(&sensor_sub, &chan, K_FOREVER);
         if (chan == &tick_chan) {
             if (sensor_sample_fetch(bmp180) == 0 &&
-                sensor_channel_get(bmp180, SENSOR_CHAN_AMBIENT_TEMP, &temp_val) == 0) {
+                sensor_channel_get(bmp180, SENSOR_CHAN_DIE_TEMP, &temp_val) == 0) {
                 temp = (float)sensor_value_to_double(&temp_val);
                 zbus_chan_pub(&temp_chan, &temp, K_NO_WAIT);
             } else {
