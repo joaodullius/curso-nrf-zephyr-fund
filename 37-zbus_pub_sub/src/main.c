@@ -45,7 +45,7 @@ void consumer_thread(void)
 
     LOG_INF("Consumer thread started, waiting for messages...");
     while (1) {
-        zbus_sub_wait(&cons_sub, &chan, K_FOREVER);
+        int ret = zbus_sub_wait(&cons_sub, &chan, K_FOREVER);
         if (&data_chan == chan) {
                 if (zbus_chan_read(&data_chan, &sample, K_NO_WAIT) == 0) {
                     LOG_INF("%u | Consumed data: %u", sample.timestamp, sample.data);
