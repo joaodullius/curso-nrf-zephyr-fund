@@ -6,6 +6,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 
+#define DEVICE_NAME CONFIG_BT_DEVICE_NAME
+#define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
+
 LOG_MODULE_REGISTER(bmp180_beacon, LOG_LEVEL_INF);
 
 const struct device *bmp180 = DEVICE_DT_GET_ONE(bosch_bmp180);
@@ -24,14 +27,36 @@ static const struct bt_data ad[] = {
     BT_DATA(BT_DATA_MANUFACTURER_DATA, mfg_data, sizeof(mfg_data)),
 };
 
-static void sensor_timer_handler(struct k_timer *timer)
+/* Set Scan Response data */
+static const struct bt_data sd[] = {
+	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
+};
+
+
+static void sensor_work_handler(struct k_work *work)
 {
     struct bmp180_msg msg;
+    int ret;
 
-    if (sensor_sample_fetch(bmp180) == 0 &&
-        sensor_channel_get(bmp180, SENSOR_CHAN_DIE_TEMP, &msg.temp) == 0) {
-        k_msgq_put(&bmp180_q, &msg, K_NO_WAIT);
+    LOG_INF("Fetching sensor data...");
+
+    if (sensor_sample_fetch(bmp180) != 0) {
+        LOG_ERR("sensor_sample_fetch failed");
+    } else if (sensor_channel_get(bmp180, SENSOR_CHAN_DIE_TEMP, &msg.temp) != 0) {
+        LOG_ERR("sensor_channel_get failed");
+    } else {
+        ret = k_msgq_put(&bmp180_q, &msg, K_NO_WAIT);
+        if (ret != 0) {
+            LOG_WRN("bmp180_q full, dropping sample Temp: %0.2f C",
+            sensor_value_to_double(&msg.temp));
+        }
     }
+}
+K_WORK_DEFINE(sensor_work, sensor_work_handler);
+
+static void sensor_timer_handler(struct k_timer *timer)
+{
+    k_work_submit(&sensor_work);
 }
 
 K_TIMER_DEFINE(sensor_timer, sensor_timer_handler, NULL);
@@ -43,15 +68,24 @@ void adv_thread(void)
 
     while (1) {
         k_msgq_get(&bmp180_q, &msg, K_FOREVER);
+        LOG_INF("Got Message Queue data: Temp: %0.2f C",
+                sensor_value_to_double(&msg.temp));
 
-        int32_t temp_centi = (int32_t)(sensor_value_to_double(&msg.temp) * 100);
-        sys_put_le16((uint16_t)temp_centi, &mfg_data[2]);
+        /* Converte sensor_value -> centi-°C (s16), truncando */
+        int32_t centi = msg.temp.val1 * 100 + msg.temp.val2 / 10000;
+        int16_t t_centi = (int16_t)centi;
 
-        err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+        memcpy(&mfg_data[2], &t_centi, sizeof(t_centi));
+
+        LOG_HEXDUMP_INF(mfg_data, sizeof(mfg_data), "Manufacturer Data");
+
+
+        err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad),sd, ARRAY_SIZE(sd));
         if (err) {
             LOG_ERR("Advertising data update failed (%d)", err);
         } else {
-            LOG_INF("Temp: %d.%02d C", temp_centi / 100, temp_centi % 100);
+            LOG_INF("Updated Temp: %0.2f C in advertising data",
+                    sensor_value_to_double(&msg.temp));
         }
     }
 }
@@ -60,6 +94,35 @@ void adv_thread(void)
 #define PRIORITY 5
 
 K_THREAD_DEFINE(adv_tid, STACK_SIZE, adv_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+
+
+static void bt_ready(int err)
+{
+	char addr_s[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_t addr = {0};
+	size_t count = 1;
+
+	if (err) {
+		printk("Bluetooth init failed (err %d)\n", err);
+		return;
+	}
+
+	printk("Bluetooth initialized\n");
+
+	/* Start advertising */
+	err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad),
+			      sd, ARRAY_SIZE(sd));
+	if (err) {
+		printk("Advertising failed to start (err %d)\n", err);
+		return;
+	}
+
+	bt_id_get(&addr, &count);
+	bt_addr_le_to_str(&addr, addr_s, sizeof(addr_s));
+
+	printk("Beacon started, advertising as %s\n", addr_s);
+}
+
 
 int main(void)
 {
@@ -72,15 +135,9 @@ int main(void)
         return 0;
     }
 
-    err = bt_enable(NULL);
+    err = bt_enable(bt_ready);
     if (err) {
         LOG_ERR("Bluetooth init failed (%d)", err);
-        return 0;
-    }
-
-    err = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
-    if (err) {
-        LOG_ERR("Advertising failed to start (%d)", err);
         return 0;
     }
 
