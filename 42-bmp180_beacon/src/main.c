@@ -54,7 +54,7 @@ static void sensor_work_handler(struct k_work *work)
     if (err) {
         LOG_ERR("Advertising data update failed (%d)", err);
     } else {
-        LOG_INF("Updated Temp: %0.2f C in advertising data",
+        LOG_INF("Updated Temp: %0.2f C in advertising data\n",
                 sensor_value_to_double(&temp));
     }
 }
